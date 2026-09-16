@@ -1,5 +1,5 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
-import { artworkPosition, safeImageUrl } from '/lib/discovery/spatial-state.mjs';
+import { artworkPosition, safeImageUrl, pillVisibility, artworkFocus, insidePreview } from '/lib/discovery/spatial-state.mjs';
 import { createArtworkFrame, disposeArtworkFrame } from '/lib/discovery/artwork-frame.mjs';
 import { artworkArrival } from '/lib/discovery/opening.mjs';
 
@@ -10,6 +10,7 @@ export class ArtworkSpace {
     this.host=document.querySelector('#scene');
     this.artLayer=document.querySelector('#art-layer');
     this.pillLayer=document.querySelector('#pill-layer');
+    this.artTip=document.createElement('div');this.artTip.className='artwork-focus-caption';this.artTip.hidden=true;document.body.append(this.artTip);
     this.onArtwork=onArtwork;this.onChoice=onChoice;this.onDepth=onDepth;
     this.scene=new THREE.Scene();
     this.scene.fog=new THREE.Fog(0xe8eae6,19,53);
@@ -38,7 +39,9 @@ export class ArtworkSpace {
       this.renderer?.setSize(this.w,this.h);
       document.querySelector('#scroll-track').style.height=`${this.h+this.maxDepth*100}px`;
     };
-    this.move=event=>{if(event.pointerType==='mouse'){this.pointer.x=(event.clientX/this.w-.5)*2;this.pointer.y=(event.clientY/this.h-.5)*2;}};
+    this.move=event=>{if(event.pointerType==='mouse'){this.cursor={x:event.clientX,y:event.clientY};this.pointer.x=(event.clientX/this.w-.5)*2;this.pointer.y=(event.clientY/this.h-.5)*2;this.releasePreview?.();}};
+    this.leave=()=>{this.cursor=null;clearTimeout(this.hoverTimer);this.hoverTimer=setTimeout(()=>{this.hoverArt=null;},300);};
+    document.documentElement.addEventListener('pointerleave',this.leave);window.addEventListener('blur',this.leave);
     window.addEventListener('resize',this.resize);
     window.addEventListener('pointermove',this.move,{passive:true});
     this.setStill(this.still);this.resize();this.tick=this.tick.bind(this);this.raf=requestAnimationFrame(this.tick);
@@ -46,6 +49,8 @@ export class ArtworkSpace {
 
   setStill(value) {
     this.still=value;document.body.classList.toggle('still',value);
+    this.hoverArt=null;this.returningArt=null;this.releasePreview=null;this.artTip.hidden=true;
+    for(const pill of this.pills){pill.visibility={};pill.node.classList.remove('pill-obscured','pill-unavailable');pill.node.inert=false;}
     if(value)this.renderer?.clear();
     for(const {button} of this.items){button.tabIndex=0;button.removeAttribute('aria-hidden');button.style.visibility='';}
     document.querySelector('#motion-toggle').textContent=value?'Use spatial view':'Use still view';
@@ -54,6 +59,8 @@ export class ArtworkSpace {
   }
 
   clear(){
+    clearTimeout(this.hoverTimer);this.hoverArt=null;this.returningArt=null;this.releasePreview=null;this.lockedPill=null;
+    this.artTip.hidden=true;
     for(const item of this.items){disposeArtworkFrame(item.frame);item.mesh?.geometry.dispose();item.mesh?.material.map?.dispose();item.mesh?.material.dispose();if(item.mesh)this.scene.remove(item.mesh);item.image.onload=null;item.image.onerror=null;}
     this.items=[];this.pills=[];this.artLayer.replaceChildren();this.pillLayer.replaceChildren();
   }
@@ -72,6 +79,25 @@ export class ArtworkSpace {
       caption.append(title,meta);button.append(image,caption);button.onclick=()=>this.onArtwork(row);
       const base=artworkPosition(index);
       const item={button,image,base,index,width:2.7,height:2.2,ready:false};
+      const activate=(keyboard=false)=>{
+        if(this.still)return;
+        if(!keyboard&&this.hoverArt&&this.hoverArt!==item)return;
+        clearTimeout(this.hoverTimer);this.hoverTimer=null;
+        if(this.hoverArt!==item){item.focusStart=performance.now();item.origin=item.screen?{...item.screen}:null;}
+        this.hoverArt=item;this.returningArt=item;this.releasePreview=release;
+        item.keyboard=keyboard;
+        this.artTip.replaceChildren(caption.cloneNode(true));
+      };
+      const release=()=>{
+        if(this.hoverArt!==item)return;
+        if(item.keyboard&&document.activeElement===button)return;
+        if(insidePreview(this.cursor,[item.origin,item.screen])){clearTimeout(this.hoverTimer);this.hoverTimer=null;return;}
+        if(this.hoverTimer)return;
+        this.hoverTimer=setTimeout(()=>{this.hoverTimer=null;if(!this.lockedPill){this.hoverArt=null;this.releasePreview=null;}},300);
+      };
+      button.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')activate();});
+      button.addEventListener('pointerleave',release);
+      button.addEventListener('focus',()=>activate(true));button.addEventListener('blur',()=>{if(this.hoverArt===item){this.hoverArt=null;this.releasePreview=null;}});
       button.dataset.frame=String(index%3);
       this.items.push(item);this.artLayer.append(button);
       image.onload=()=>{
@@ -99,7 +125,12 @@ export class ArtworkSpace {
       button.setAttribute('aria-label',`Explore ${choice.label}, ${choice.count.toLocaleString()} works`);
       const label=document.createElement('span');label.textContent=choice.label;button.append(label);button.insertAdjacentHTML('beforeend',arrow);
       const count=document.createElement('span');count.className='word-count';count.textContent=`${choice.count.toLocaleString()} works to explore`;
-      button.onclick=()=>this.onChoice(choice);node.append(button,count);this.pillLayer.append(node);this.pills.push({node,index});
+      button.onclick=()=>this.onChoice(choice);node.append(button,count);this.pillLayer.append(node);
+      const pill={node,index};this.pills.push(pill);
+      const lock=()=>{clearTimeout(this.hoverTimer);this.lockedPill=pill;};
+      const unlock=()=>{this.lockedPill=null;clearTimeout(this.hoverTimer);this.hoverTimer=setTimeout(()=>{this.hoverArt=null;},300);};
+      button.addEventListener('pointerenter',lock);button.addEventListener('pointerleave',unlock);
+      button.addEventListener('focus',lock);button.addEventListener('blur',unlock);
     });
     this.resize();
   }
@@ -122,7 +153,11 @@ export class ArtworkSpace {
       const bob=Math.sin(time*.00028+item.index*2)*.035;
       const spread=1+Math.max(0,-item.base.z)/24;
       const arrival=this.openingStart==null?1:artworkArrival(time-this.openingStart,item.index);
-      const x=item.base.x*fitX*spread,y=item.base.y*spread+bob-(1-arrival)*.25,z=item.base.z-(1-arrival)*5;
+      item.focus=artworkFocus(item.focus||0,this.hoverArt===item,time-(item.focusStart??time),dt);
+      const baseX=item.base.x*fitX*spread,baseY=item.base.y*spread+bob-(1-arrival)*.25;
+      const x=THREE.MathUtils.lerp(baseX,this.camera.position.x,item.focus);
+      const y=THREE.MathUtils.lerp(baseY,this.camera.position.y+.35,item.focus);
+      const z=item.base.z-(1-arrival)*5;
       const distance=this.camera.position.z-z;
       const visible=distance>2.3&&distance<60&&arrival>.001;
       const opacity=Math.min(1,Math.max(0,(distance-2.3)/2))*arrival;
@@ -136,23 +171,37 @@ export class ArtworkSpace {
       const px=(v.x+1)*this.w/2,py=(1-v.y)*this.h/2;
       const width=item.width*size,height=item.height*size;
       const onScreen=visible&&px+width/2>0&&px-width/2<this.w&&py+height/2>80&&py-height/2<this.h-70;
+      item.screen=onScreen?{x:px-width/2-18,y:py-height/2-18,w:width+36,h:height+36}:null;
       item.button.style.width=`${width}px`;item.button.style.height=`${height}px`;
       item.button.style.transform=`translate3d(${px-width/2}px,${py-height/2}px,0)`;
       item.button.style.opacity=opacity;item.button.style.visibility=onScreen?'visible':'hidden';
       item.button.style.zIndex=Math.round(100-distance);item.button.tabIndex=onScreen?0:-1;
     });
     const anchors=this.w<700?[[.22,.27],[.71,.2],[.79,.53],[.21,.61],[.49,.76],[.78,.84]]:[[.2,.34],[.51,.2],[.8,.35],[.28,.69],[.59,.68],[.81,.8]];
-    this.pills.forEach(({node,index})=>{
+    const captionArt=this.hoverArt||(this.returningArt?.focus>.01?this.returningArt:null);
+    const art=captionArt?.screen;
+    this.artTip.hidden=!art;
+    let tipRect=null;
+    if(art){
+      const width=this.artTip.offsetWidth,height=this.artTip.offsetHeight;
+      const left=Math.max(12,Math.min(this.w-width-12,art.x+art.w/2-width/2));
+      const top=Math.max(85,Math.min(this.h-height-90,art.y+art.h+8));
+      this.artTip.style.transform=`translate3d(${left}px,${top}px,0)`;
+      tipRect={x:left-8,y:top-8,w:width+16,h:height+16};
+    }
+    this.pills.forEach(pill=>{
+      const {node,index}=pill;
       const [nx,ny]=anchors[index%6];
       // Foreground words travel gently with the camera, remaining reachable at every depth.
-      const distance=8.5+(index%3)*.5;
-      const drift=Math.sin(this.depth*.15+index)*.08;
-      v.set((nx-.5)*worldHeight*this.camera.aspect*(distance/10),(.5-ny)*worldHeight*(distance/10)+drift,this.camera.position.z-distance).project(this.camera);
-      let px=(v.x+1)*this.w/2,py=(1-v.y)*this.h/2;
+      let px=nx*this.w,py=ny*this.h;
       const width=node.offsetWidth,height=node.offsetHeight;
       px=Math.max(width/2+12,Math.min(this.w-width/2-12,px));
       py=Math.max(115,Math.min(this.h-135,py));
-      node.style.transform=`translate3d(${px-width/2}px,${py-height/2}px,0)`;
+      const base={x:px-width/2,y:py-height/2,w:width,h:height};
+      pill.visibility=pillVisibility(base,[art,tipRect],this.lockedPill===pill,this.cursor,pill.visibility,performance.now());
+      node.classList.toggle('pill-obscured',pill.visibility.hidden);
+      node.classList.toggle('pill-unavailable',pill.visibility.inert);node.inert=pill.visibility.inert;
+      node.style.transform=`translate3d(${base.x}px,${base.y}px,0)`;
     });
     this.renderer?.render(this.scene,this.camera);
     const progress=this.depth/this.maxDepth;
@@ -164,5 +213,5 @@ export class ArtworkSpace {
     this.onDepth?.(progress);
   }
 
-  dispose(){cancelAnimationFrame(this.raf);this.clear();this.frameTextures.forEach(texture=>texture.dispose());window.removeEventListener('resize',this.resize);window.removeEventListener('pointermove',this.move);this.renderer?.dispose();}
+  dispose(){cancelAnimationFrame(this.raf);this.clear();this.artTip.remove();document.documentElement.removeEventListener('pointerleave',this.leave);window.removeEventListener('blur',this.leave);this.frameTextures.forEach(texture=>texture.dispose());window.removeEventListener('resize',this.resize);window.removeEventListener('pointermove',this.move);this.renderer?.dispose();}
 }

@@ -22,6 +22,13 @@ body .art-target:not(.rendered) img,body.still #art-layer .art-target img{box-sh
 body.still .art-target img{width:auto;height:auto;max-width:calc(100% - 20px);max-height:calc(100% - 20px)}
 .intro#intro h1{font-family:var(--serif);font-style:normal;font-weight:400;font-feature-settings:'liga' 1;letter-spacing:-.025em;font-size:clamp(38px,5.7vw,82px);line-height:1.13}
 .intro h1 .title-focus{font-family:inherit;font-style:italic;font-weight:inherit;font-size:1em;letter-spacing:inherit;line-height:inherit;vertical-align:baseline;margin-left:0}
+.word-anchor{transition:opacity .18s ease-out}.word-anchor.pill-obscured{opacity:0;transition-duration:.45s}.word-anchor.pill-unavailable,.word-anchor.pill-unavailable *{pointer-events:none!important}
+@media(prefers-reduced-motion:reduce){.word-anchor,.word-anchor.pill-obscured{transition:none}}
+body:not(.still) .art-target .caption{display:none!important}
+.artwork-focus-caption{position:fixed;top:0;left:0;z-index:60;max-width:min(240px,calc(100vw - 24px));width:max-content;padding:9px 12px;background:#20362af5;border:1px solid #ffffff18;border-radius:5px;color:#f7f8f2;box-shadow:0 4px 14px #15251c26;pointer-events:none;text-align:left;font:11px/1.4 Arial,sans-serif}
+.artwork-focus-caption[hidden]{display:none}.artwork-focus-caption .caption strong{display:block;font:400 13px/1.4 'new-spirit',Georgia,serif;font-stretch:normal;margin-bottom:3px}.artwork-focus-caption .caption>span{display:block;color:#d2d9d0;font:11px/1.4 Arial,sans-serif;margin-top:0}
+body.modal-open .artwork-focus-caption{display:none}
+#scene-title h1{color:#000}
 .feeling-tooltip{position:absolute;bottom:calc(100% + 12px);left:62%;transform:translateX(-50%);padding:9px 13px;border-radius:7px;background:#111;color:#fff;font:12px/1.3 Arial,sans-serif;letter-spacing:0;white-space:nowrap;text-shadow:none;box-shadow:0 4px 14px #0002;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .15s ease;z-index:5}
 .feeling-tooltip::after{content:'';position:absolute;top:100%;left:50%;margin-left:-4px;border:4px solid transparent;border-top-color:#111}
 html:not([data-opening]) #intro:not(.tip-dismissed):has(.title-focus:focus-visible) .feeling-tooltip{visibility:visible;opacity:1}
