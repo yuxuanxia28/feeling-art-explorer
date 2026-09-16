@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Specialized Experience — Follow a feeling</title>
+  <link rel="stylesheet" href="https://use.typekit.net/ovh3nxi.css">
+  <link rel="stylesheet" href="/discovery.css">
+</head>
+<body>
+  <header class="masthead"><a class="wordmark" href="/">Specialized<br><i>Experience.</i></a><span class="collection">An exploration of the<br>National Gallery of Art collection</span><button id="about-open" class="quiet">How this works <span aria-hidden="true">↗</span></button></header>
+  <main id="app"></main>
+  <dialog id="detail" aria-label="Artwork details"></dialog>
+  <dialog id="research" aria-labelledby="research-title">
+    <form id="research-form"><div class="dialog-top"><span>YOUR RESEARCH</span><button type="button" class="close" data-close="research" aria-label="Close filters">×</button></div>
+      <h2 id="research-title">Look a little<br><i>closer.</i></h2><p>Refine the catalogue by what you know. Your feeling stays in the trail.</p>
+      <label>Title or subject<input name="q" placeholder="e.g. garden, portrait, moon"></label>
+      <label>Artist<input name="artist" placeholder="Artist name"></label>
+      <label>Type of work<select name="medium"><option value="">Any type</option><option>Painting</option><option>Print</option><option>Drawing</option><option>Photograph</option><option>Sculpture</option><option>Decorative Art</option></select></label>
+      <div class="year-fields"><label>From year<input name="from" type="number" min="1" max="2026" placeholder="1800"></label><label>To year<input name="to" type="number" min="1" max="2026" placeholder="1900"></label></div>
+      <p class="micro">Year filters use the dates stated in the catalogue. Undated works are omitted. This collection index contains open-access images.</p>
+      <p id="filter-error" role="alert"></p><button class="primary" type="submit">Apply to my exploration <span>↗</span></button><button id="reset-filters" type="button" class="quiet">Clear research filters</button>
+    </form>
+  </dialog>
+  <dialog id="about" aria-labelledby="about-title"><div class="dialog-top"><span>A WAY INTO ART</span><button class="close" data-close="about" aria-label="Close guide">×</button></div><h2 id="about-title">Start with a feeling.<br><i>Follow your curiosity.</i></h2><ol class="guide"><li><strong>Feel</strong><p>Choose an atmosphere. Each feeling opens a suggested route through catalogue themes.</p></li><li><strong>Follow</strong><p>Answer a few optional questions. See the artworks change, skip a question, or undo any choice.</p></li><li><strong>Look closer</strong><p>Open research filters for an artist, a date range, or a type of work. Switch to the list to compare catalogue details.</p></li></ol><p class="micro">Prototype coverage: feeling routes are editorial theme suggestions, not measured emotions. Visual comparison uses the small indexed sample. Artwork DNA, when available, is a model-assisted reading. Titles, dates and media come from NGA.</p></dialog>
+  <script type="module" src="/discovery.js"></script>
+</body></html>

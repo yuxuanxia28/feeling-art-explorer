@@ -1,0 +1,11 @@
+.worktrees/
+data/nga-artworks.sqlite
+node_modules/
+
+# Separate local typography experiments and unused font assets are not part of the explorer.
+ink-type.html
+test/ink-type.test.mjs
+assets/fonts/
+.DS_Store
+.env
+.env.*

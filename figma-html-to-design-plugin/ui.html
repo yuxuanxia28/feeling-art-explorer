@@ -1,0 +1,271 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--figma-color-text);
+      background: var(--figma-color-bg);
+    }
+    .wrap { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    h1 { font-size: 15px; line-height: 1.25; margin: 0; font-weight: 600; }
+    p { margin: 0; line-height: 1.45; color: var(--figma-color-text-secondary); }
+    label { display: grid; gap: 6px; font-weight: 500; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      color: var(--figma-color-text);
+      background: var(--figma-color-bg);
+      font: inherit;
+      outline: none;
+    }
+    textarea { min-height: 190px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .actions { display: flex; gap: 8px; padding-top: 4px; }
+    button {
+      border: 1px solid var(--figma-color-border);
+      border-radius: 9px;
+      height: 36px;
+      padding: 0 12px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--figma-color-bg);
+      color: var(--figma-color-text);
+    }
+    .primary { flex: 1; color: var(--figma-color-text-onbrand); background: var(--figma-color-bg-brand); border-color: var(--figma-color-bg-brand); }
+    .status {
+      min-height: 18px;
+      color: var(--figma-color-text-secondary);
+      font-size: 11px;
+    }
+    iframe {
+      position: absolute;
+      left: -10000px;
+      top: 0;
+      width: 390px;
+      height: 844px;
+      border: 0;
+      pointer-events: none;
+    }
+    .hint {
+      padding: 10px;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 10px;
+      background: var(--figma-color-bg-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div>
+      <h1>HTML to Design Importer</h1>
+      <p>Paste HTML, render it in a hidden preview, then create editable Figma layers from visible boxes and text.</p>
+    </div>
+
+    <div class="hint">
+      Best for static mockups and prototypes. Complex React/canvas interactions import as editable structure, not perfect browser pixels.
+    </div>
+
+    <label>
+      Import name
+      <input id="name" value="NGA iPhone Prototype" />
+    </label>
+
+    <div class="row">
+      <label>
+        Width
+        <input id="width" type="number" value="390" min="120" max="1920" />
+      </label>
+      <label>
+        Height
+        <input id="height" type="number" value="844" min="120" max="3000" />
+      </label>
+    </div>
+
+    <label>
+      Scale
+      <select id="scale">
+        <option value="1">1x</option>
+        <option value="0.75">0.75x</option>
+        <option value="0.5">0.5x</option>
+      </select>
+    </label>
+
+    <label>
+      HTML
+      <textarea id="html" placeholder="Paste your index.html contents here"></textarea>
+    </label>
+
+    <div class="actions">
+      <button id="cancel">Cancel</button>
+      <button id="import" class="primary">Import to Figma</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const preview = document.getElementById("preview");
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function numeric(id, fallback) {
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function px(value) {
+      const next = Number.parseFloat(value);
+      return Number.isFinite(next) ? next : 0;
+    }
+
+    function isVisible(style, rect) {
+      return style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        Number(style.opacity || 1) > 0.02 &&
+        rect.width > 1 &&
+        rect.height > 1;
+    }
+
+    function nodeName(el) {
+      const named = el.getAttribute("aria-label") || el.getAttribute("layer-name") || el.getAttribute("class");
+      return named ? String(named).split(/\s+/).slice(0, 2).join(" ") : el.tagName.toLowerCase();
+    }
+
+    function extractTextNodes(root, viewport) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const items = [];
+      let node;
+      while ((node = walker.nextNode())) {
+        const text = node.nodeValue.replace(/\s+/g, " ").trim();
+        if (!text || text.length < 2) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        const parent = node.parentElement;
+        if (!parent) continue;
+        const style = getComputedStyle(parent);
+        if (!isVisible(style, rect)) continue;
+        if (rect.right < 0 || rect.bottom < 0 || rect.left > viewport.width || rect.top > viewport.height) continue;
+        items.push({
+          type: "text",
+          name: text.slice(0, 32),
+          text,
+          x: Math.max(0, rect.left),
+          y: Math.max(0, rect.top),
+          width: Math.min(rect.width, viewport.width - Math.max(0, rect.left)),
+          height: rect.height,
+          color: style.color,
+          fontSize: px(style.fontSize),
+          fontWeight: Number.parseInt(style.fontWeight, 10) || 400,
+          depth: 999,
+          area: rect.width * rect.height
+        });
+      }
+      return items;
+    }
+
+    function extractElements(doc, viewport) {
+      const elements = [...doc.body.querySelectorAll("*")];
+      const items = [];
+      for (const el of elements) {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        if (!isVisible(style, rect)) continue;
+        if (rect.right < 0 || rect.bottom < 0 || rect.left > viewport.width || rect.top > viewport.height) continue;
+
+        const background = style.backgroundColor;
+        const borderWidth = px(style.borderTopWidth);
+        const hasBackground = background && background !== "rgba(0, 0, 0, 0)" && background !== "transparent";
+        const hasBorder = borderWidth > 0 && style.borderTopColor !== "rgba(0, 0, 0, 0)";
+        const isImage = el.tagName.toLowerCase() === "img";
+
+        if (!hasBackground && !hasBorder && !isImage) continue;
+
+        items.push({
+          type: "box",
+          tag: el.tagName.toLowerCase(),
+          name: isImage ? `Image: ${el.getAttribute("alt") || "placeholder"}` : nodeName(el),
+          x: Math.max(0, rect.left),
+          y: Math.max(0, rect.top),
+          width: Math.min(rect.width, viewport.width - Math.max(0, rect.left)),
+          height: Math.min(rect.height, viewport.height - Math.max(0, rect.top)),
+          backgroundColor: isImage ? "rgb(229, 231, 235)" : background,
+          borderColor: style.borderTopColor,
+          borderWidth,
+          borderRadius: px(style.borderTopLeftRadius),
+          depth: el.querySelectorAll("*").length,
+          area: rect.width * rect.height
+        });
+      }
+      return items;
+    }
+
+    async function waitForPreviewLoad() {
+      await new Promise(resolve => setTimeout(resolve, 900));
+      const doc = preview.contentDocument;
+      if (doc?.fonts?.ready) {
+        await Promise.race([doc.fonts.ready, new Promise(resolve => setTimeout(resolve, 1500))]);
+      }
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+
+    async function buildPayload() {
+      const html = document.getElementById("html").value.trim();
+      if (!html) throw new Error("Paste HTML first.");
+
+      const viewport = { width: numeric("width", 390), height: numeric("height", 844) };
+      preview.style.width = `${viewport.width}px`;
+      preview.style.height = `${viewport.height}px`;
+      preview.srcdoc = html;
+      await waitForPreviewLoad();
+
+      const doc = preview.contentDocument;
+      if (!doc?.body) throw new Error("Unable to render HTML preview.");
+
+      const boxes = extractElements(doc, viewport).slice(0, 350);
+      const text = extractTextNodes(doc.body, viewport).slice(0, 220);
+
+      return {
+        name: document.getElementById("name").value || "HTML Import",
+        viewport,
+        scale: Number(document.getElementById("scale").value),
+        items: [...boxes, ...text]
+      };
+    }
+
+    document.getElementById("import").onclick = async () => {
+      try {
+        setStatus("Rendering and extracting layers...");
+        const payload = await buildPayload();
+        setStatus(`Sending ${payload.items.length} layers to Figma...`);
+        parent.postMessage({ pluginMessage: { type: "import-design", payload } }, "*");
+      } catch (error) {
+        setStatus(error.message || String(error));
+      }
+    };
+
+    document.getElementById("cancel").onclick = () => {
+      parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+    };
+
+    window.onmessage = event => {
+      const message = event.data.pluginMessage;
+      if (!message) return;
+      if (message.type === "done") setStatus("Done. Editable layers were added to the canvas.");
+      if (message.type === "error") setStatus(message.message || "Import failed.");
+    };
+  </script>
+</body>
+</html>

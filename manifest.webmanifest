@@ -1,0 +1,19 @@
+{
+  "name": "NGA Artwork Explorer",
+  "short_name": "NGA Explorer",
+  "description": "A touch-first artwork discovery prototype for the National Gallery of Art collection.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

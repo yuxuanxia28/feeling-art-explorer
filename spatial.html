@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#e8eae6">
+  <title>Specialized Experience — A space for curiosity</title>
+  <script>if(!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.dataset.opening='typing';setTimeout(()=>{delete document.documentElement.dataset.opening;window.dispatchEvent(new Event('opening-timeout'));},10000);}</script>
+  <link rel="stylesheet" href="https://use.typekit.net/ovh3nxi.css">
+  <link rel="stylesheet" href="/spatial.css">
+</head>
+<body>
+<!-- THESIS: Search by moving through art and choosing floating words, not through a result grid.
+OWN-WORLD: Cool mineral white, pine ink, frosted glass pills, New Spirit Condensed, uncropped artwork planes.
+STORY: Feel, follow a word, travel, look closer, retrace.
+FIRST VIEWPORT: Art surrounds an open centre. Six glass words cross its foreground. Small navigation at the top; the trail floats below.
+FORM: User-pinned spatial gallery; seed 7e4f33eb is subordinate to the approved brief. Scroll moves a Three.js camera; pills branch the query.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+  <a class="skip-link" href="#journey-controls">Skip to exploration controls</a>
+  <button id="skip-opening" hidden>Skip intro</button>
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="Specialized Experience home">Specialized<br><i>Experience.</i></a>
+    <div class="top-actions glass"><button id="research-open">Find something specific</button><span></span><button id="about-open" aria-label="How to explore">?</button></div>
+  </header>
+  <main id="space" aria-label="Spatial artwork exploration">
+    <div id="scene" aria-label="Artworks"><div id="art-layer"></div><div id="pill-layer" aria-label="Choose an exploration direction"></div></div>
+    <div class="intro" id="intro"><h1><span class="title-context"><span class="context-rest">Follow a </span><span class="context-soft" aria-hidden="true">Follow a </span><span class="context-sharp" aria-hidden="true">Follow a </span></span><i class="title-focus">feeling.</i></h1><p>Choose a word. See where it takes you.</p></div>
+    <div class="scene-title" id="scene-title" hidden><h1></h1><p></p></div>
+    <div id="message" class="message glass" role="status"><span class="loading-dot"></span> Opening the collection…</div>
+    <div id="empty" class="empty glass" hidden><h2>A different direction?</h2><p>No artworks match this combination.</p><button id="empty-back">Return to the previous space</button></div>
+    <button id="more-works" class="glass more-works" hidden>Further into this collection ↗</button>
+    <div class="depth-rail" aria-hidden="true"><span>NEAR</span><div><i id="depth-fill"></i></div><span>FAR</span></div>
+  </main>
+  <div id="scroll-track" aria-hidden="true"></div>
+  <footer class="bottom-bar" id="journey-controls" tabindex="-1">
+    <div class="collection-note">National Gallery of Art<br><span id="collection-count">An open collection. An open mind.</span></div>
+    <nav id="trail" class="trail glass" aria-label="Your exploration"></nav>
+    <div class="travel-controls"><button id="travel-back" class="glass round" aria-label="Move backward through artworks"><svg viewBox="0 0 24 24"><path d="M12 19V5m-5 5 5-5 5 5"/></svg></button><button id="travel-forward" class="glass round" aria-label="Move forward through artworks"><svg viewBox="0 0 24 24"><path d="M12 5v14m-5-5 5 5 5-5"/></svg></button><span id="scroll-hint">Scroll to wander</span></div>
+  </footer>
+  <dialog id="detail" aria-label="Artwork details"></dialog>
+  <dialog id="research" aria-labelledby="research-title" class="glass panel">
+    <button class="close" data-close="research" aria-label="Close research filters">×</button><h2 id="research-title">A little more<br><i>particular.</i></h2>
+    <p>Bring something you know into this space.</p>
+    <form id="research-form">
+      <label>Title or subject<input name="q" placeholder="Garden, portrait, moon…"></label>
+      <label>Artist<input name="artist" placeholder="Artist name"></label>
+      <label>Type of work<select name="medium"><option value="">All types</option><option>Painting</option><option>Drawing</option><option>Print</option><option>Photograph</option><option>Sculpture</option></select></label>
+      <div class="year-fields"><label>From year<input name="from" type="number" min="1" max="2026" placeholder="1800"></label><label>To year<input name="to" type="number" min="1" max="2026" placeholder="1900"></label></div>
+      <p class="fine">Dates use catalogue records; undated works are excluded when a year is set. Some artist names are missing from this local index.</p>
+      <p id="filter-error" role="alert"></p><button class="solid" type="submit">Enter this space <span>↗</span></button>
+    </form>
+  </dialog>
+  <dialog id="about" aria-labelledby="about-title" class="glass panel">
+    <button class="close" data-close="about" aria-label="Close guide">×</button><h2 id="about-title">Let curiosity<br><i>lead.</i></h2>
+    <p>Choose a floating word to enter a new space. Scroll or use the arrow controls to move through the artworks. Open a work to look closer.</p>
+    <p>Your trail remembers each choice. Select an earlier stop to return there, including your viewing position.</p>
+    <p class="fine">Feelings are editorial routes through catalogue themes, not measured emotions. Related words have matching NGA records. Distances are composed for browsing, not similarity scores. Visual comparison is available only for the small indexed sample.</p>
+    <button id="motion-toggle" class="solid">Use still view</button><a class="text-link" href="/discover.html">Open the catalogue view</a>
+  </dialog>
+  <noscript><p class="no-script">This exploration needs JavaScript. Please enable it to browse the collection.</p></noscript>
+  <script type="module" src="/spatial.js"></script>
+</body>
+</html>

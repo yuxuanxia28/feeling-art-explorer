@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "start": "node server.mjs",
+    "import:nga": "node scripts/import-nga.mjs",
+    "test": "node --test",
+    "index:visuals": "node scripts/index-visuals.mjs",
+    "index:dna": "node scripts/index-dna.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "sharp": "^0.35.4",
+    "three": "0.186.0"
+  }
+}
