@@ -8,6 +8,22 @@ const stops=[{label:'Begin',query:{},scroll:0,data:null}];
 let current=0;
 const introHeading=$('#intro h1');
 const opening=startOpening();
+const feelingTip=document.createElement('span');
+feelingTip.id='feeling-tooltip';feelingTip.className='feeling-tooltip';
+feelingTip.setAttribute('role','tooltip');feelingTip.textContent='Scroll to wander';
+$('#intro').append(feelingTip);
+function connectFeelingTip(){
+  const word=introHeading.querySelector('.title-focus');
+  if(!word)return;
+  word.tabIndex=0;word.setAttribute('aria-describedby','feeling-tooltip');
+}
+new MutationObserver(connectFeelingTip).observe(introHeading,{childList:true});
+connectFeelingTip();
+introHeading.addEventListener('keydown',event=>{
+  if(event.key==='Escape')$('#intro').classList.add('tip-dismissed');
+});
+introHeading.addEventListener('pointerleave',()=>$('#intro').classList.remove('tip-dismissed'));
+introHeading.addEventListener('focusout',()=>$('#intro').classList.remove('tip-dismissed'));
 document.querySelector('.skip-link').addEventListener('click',()=>opening.finish());
 const clearTitleFocus=()=>introHeading.removeAttribute('data-title-focus');
 window.addEventListener('pointermove',event=>{
